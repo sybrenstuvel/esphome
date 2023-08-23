@@ -31,7 +31,27 @@ void SpeedFan::control(const fan::FanCall &call) {
   this->publish_state();
 }
 void SpeedFan::write_state_() {
-  float speed = this->state ? static_cast<float>(this->speed) / static_cast<float>(this->speed_count_) : 0.0f;
+  static bool previous_state = false;
+
+  int speed_to_use = this->speed;
+  if (this->state) {
+    if (!previous_state && this->speed_kickstart_ > speed_to_use) {
+      // Fan needs to start spinning. Give it a kick.
+      // TODO: somehow, after enough time has passed to make the fan spin, go back
+      // to the actually intended speed.
+      speed_to_use = this->speed_kickstart_;
+    }
+    speed_to_use = max(speed_to_use, this->speed_min_);
+  } else {
+    speed_to_use = 0;
+  }
+  previous_state = this->state;
+
+  if (this->state && this->speed != speed_to_use) {
+    ESP_LOGV(TAG, "'%s': using speed %d (instead of %d)", this->name_.c_str(), speed_to_use, this->speed);
+  }
+
+  float speed = static_cast<float>(speed_to_use) / static_cast<float>(this->speed_count_);
   this->output_->set_level(speed);
 
   if (this->oscillating_ != nullptr)

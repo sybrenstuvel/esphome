@@ -23,6 +23,8 @@ CONFIG_SCHEMA = fan.FAN_SCHEMA.extend(
             "Configuring individual speeds is deprecated."
         ),
         cv.Optional(CONF_SPEED_COUNT, default=100): cv.int_range(min=1),
+        cv.Optional("speed_kickstart"): cv.int_range(min=1),
+        cv.Optional("speed_min"): cv.int_range(min=1),
     }
 ).extend(cv.COMPONENT_SCHEMA)
 
@@ -40,3 +42,9 @@ async def to_code(config):
     if CONF_DIRECTION_OUTPUT in config:
         direction_output = await cg.get_variable(config[CONF_DIRECTION_OUTPUT])
         cg.add(var.set_direction(direction_output))
+
+    if "speed_kickstart" in config:
+        cg.add(var.set_speed_kickstart(config["speed_kickstart"]))
+
+    if "speed_min" in config:
+        cg.add(var.set_speed_min(config["speed_min"]))
